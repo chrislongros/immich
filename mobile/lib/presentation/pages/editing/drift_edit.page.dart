@@ -11,6 +11,7 @@ import 'package:immich_mobile/domain/models/asset/base_asset.model.dart';
 import 'package:immich_mobile/entities/asset.entity.dart';
 import 'package:immich_mobile/extensions/build_context_extensions.dart';
 import 'package:immich_mobile/providers/background_sync.provider.dart';
+import 'package:immich_mobile/providers/infrastructure/asset.provider.dart';
 import 'package:immich_mobile/repositories/file_media.repository.dart';
 import 'package:immich_mobile/routing/router.dart';
 import 'package:immich_mobile/services/foreground_upload.service.dart';
@@ -91,6 +92,8 @@ class DriftEditImagePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final edits = ref.read(assetServiceProvider).getAssetEdits(asset.remoteId!);
+
     return Scaffold(
       appBar: AppBar(
         title: Text("edit".tr()),
@@ -139,6 +142,12 @@ class DriftEditImagePage extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
+            FutureBuilder(
+              future: edits,
+              builder: (ctx, data) {
+                return Text(data.hasData ? data.data?.edits.length.toString() ?? "" : "...");
+              },
+            ),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[

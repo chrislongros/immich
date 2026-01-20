@@ -4,6 +4,7 @@ import 'package:immich_mobile/domain/models/exif.model.dart';
 import 'package:immich_mobile/extensions/platform_extensions.dart';
 import 'package:immich_mobile/infrastructure/repositories/local_asset.repository.dart';
 import 'package:immich_mobile/infrastructure/repositories/remote_asset.repository.dart';
+import 'package:openapi/api.dart';
 
 typedef _AssetVideoDimension = ({double? width, double? height, bool isFlipped});
 
@@ -115,5 +116,13 @@ class AssetService {
 
   Future<List<LocalAlbum>> getSourceAlbums(String localAssetId, {BackupSelection? backupSelection}) {
     return _localAssetRepository.getSourceAlbums(localAssetId, backupSelection: backupSelection);
+  }
+
+  Future<AssetEditsDto?> getAssetEdits(String assetId) {
+    return _remoteAssetRepository.getAssetEdits(assetId);
+  }
+
+  Future<AssetEditsDto?> editAsset(String assetId, AssetEditActionListDto edits) {
+    return _remoteAssetRepository.editAsset(assetId, edits);
   }
 }

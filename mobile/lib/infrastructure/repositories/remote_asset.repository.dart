@@ -9,11 +9,13 @@ import 'package:immich_mobile/infrastructure/entities/remote_asset.entity.drift.
 import 'package:immich_mobile/infrastructure/entities/stack.entity.drift.dart';
 import 'package:immich_mobile/infrastructure/repositories/db.repository.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:openapi/api.dart' hide AssetVisibility;
 
 class RemoteAssetRepository extends DriftDatabaseRepository {
   final Drift _db;
+  final AssetsApi _api;
 
-  const RemoteAssetRepository(this._db) : super(_db);
+  const RemoteAssetRepository(this._db, this._api) : super(_db);
 
   /// For testing purposes
   Future<List<RemoteAsset>> getSome(String userId) {
@@ -263,5 +265,13 @@ class RemoteAssetRepository extends DriftDatabaseRepository {
 
   Future<int> getCount() {
     return _db.managers.remoteAssetEntity.count();
+  }
+
+  Future<AssetEditsDto?> getAssetEdits(String assetId) async {
+    return _api.getAssetEdits(assetId);
+  }
+
+  Future<AssetEditsDto?> editAsset(String assetId, AssetEditActionListDto edits) {
+    return _api.editAsset(assetId, edits);
   }
 }
