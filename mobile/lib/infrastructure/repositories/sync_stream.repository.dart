@@ -281,7 +281,7 @@ class SyncStreamRepository extends DriftDatabaseRepository {
     }
   }
 
-  Future<void> updateAssetEditsV1(Iterable<SyncAssetEditV1> data) async {
+  Future<void> updateAssetEditsV1(Iterable<SyncAssetEditV1> data, {String debugLabel = 'user'}) async {
     try {
       await _db.batch((batch) {
         for (final edit in data) {
@@ -297,12 +297,12 @@ class SyncStreamRepository extends DriftDatabaseRepository {
         }
       });
     } catch (error, stack) {
-      _logger.severe('Error: updateAssetEditsV1', error, stack);
+      _logger.severe('Error: updateAssetEditsV1 - $debugLabel', error, stack);
       rethrow;
     }
   }
 
-  Future<void> deleteAssetEditsV1(Iterable<SyncAssetEditDeleteV1> data) async {
+  Future<void> deleteAssetEditsV1(Iterable<SyncAssetEditDeleteV1> data, {String debugLabel = 'user'}) async {
     try {
       await _db.batch((batch) {
         for (final edit in data) {
@@ -310,7 +310,7 @@ class SyncStreamRepository extends DriftDatabaseRepository {
         }
       });
     } catch (error, stack) {
-      _logger.severe('Error: deleteAssetEditsV1', error, stack);
+      _logger.severe('Error: deleteAssetEditsV1 - $debugLabel', error, stack);
       rethrow;
     }
   }

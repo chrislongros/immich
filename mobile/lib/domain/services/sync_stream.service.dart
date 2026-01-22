@@ -257,6 +257,7 @@ class SyncStreamService {
     _logger.info('Processing batch of ${batchData.length} AssetEditReadyV1 events');
 
     final List<SyncAssetV1> assets = [];
+    final List<SyncAssetEditV1> assetEdits = [];
 
     try {
       for (final data in batchData) {
@@ -266,20 +267,33 @@ class SyncStreamService {
 
         final payload = data;
         final assetData = payload['asset'];
+        final editData = payload['edit'];
 
-        if (assetData == null) {
+        if (assetData == null || editData == null) {
           continue;
         }
 
         final asset = SyncAssetV1.fromJson(assetData);
+        final edits = (editData as List<dynamic>)
+            .map((e) => SyncAssetEditV1.fromJson(e))
+            .whereType<SyncAssetEditV1>()
+            .toList();
 
         if (asset != null) {
           assets.add(asset);
+          assetEdits.addAll(edits);
         }
       }
 
       if (assets.isNotEmpty) {
         await _syncStreamRepository.updateAssetsV1(assets, debugLabel: 'websocket-edit');
+
+        // edits that are sent replace previous edits, so we delete existing ones first
+        await _syncStreamRepository.deleteAssetEditsV1(
+          assets.map((asset) => SyncAssetEditDeleteV1(assetId: asset.id)).toList(),
+          debugLabel: 'websocket-edit',
+        );
+        await _syncStreamRepository.updateAssetEditsV1(assetEdits, debugLabel: 'websocket-edit');
         _logger.info('Successfully processed ${assets.length} edited assets');
       }
     } catch (error, stackTrace) {
