@@ -1912,6 +1912,16 @@ export type SyncAlbumV1 = {
 export type SyncAssetDeleteV1 = {
     assetId: string;
 };
+export type SyncAssetEditDeleteV1 = {
+    assetId: string;
+};
+export type SyncAssetEditV1 = {
+    action: AssetEditAction;
+    assetId: string;
+    id: string;
+    parameters: object;
+    sequence: number;
+};
 export type SyncAssetExifV1 = {
     assetId: string;
     city: string | null;
