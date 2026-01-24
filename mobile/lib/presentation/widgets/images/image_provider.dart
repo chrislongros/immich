@@ -126,7 +126,7 @@ ImageProvider getFullImageProvider(BaseAsset asset, {Size size = const Size(1080
   return provider;
 }
 
-ImageProvider? getThumbnailImageProvider(BaseAsset asset, {Size size = kThumbnailResolution}) {
+ImageProvider? getThumbnailImageProvider(BaseAsset asset, {Size size = kThumbnailResolution, bool edited = true}) {
   if (_shouldUseLocalAsset(asset)) {
     final id = asset is LocalAsset ? asset.id : (asset as RemoteAsset).localId!;
     return LocalThumbProvider(id: id, size: size, assetType: asset.type);
@@ -134,7 +134,7 @@ ImageProvider? getThumbnailImageProvider(BaseAsset asset, {Size size = kThumbnai
 
   final assetId = asset is RemoteAsset ? asset.id : (asset as LocalAsset).remoteId;
   final thumbhash = asset is RemoteAsset ? asset.thumbHash ?? "" : "";
-  return assetId != null ? RemoteThumbProvider(assetId: assetId, thumbhash: thumbhash) : null;
+  return assetId != null ? RemoteThumbProvider(assetId: assetId, thumbhash: thumbhash, edited: edited) : null;
 }
 
 bool _shouldUseLocalAsset(BaseAsset asset) =>

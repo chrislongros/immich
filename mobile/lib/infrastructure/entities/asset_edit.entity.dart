@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:immich_mobile/domain/models/asset_edit.model.dart';
+import 'package:immich_mobile/infrastructure/entities/asset_edit.entity.drift.dart';
 import 'package:immich_mobile/infrastructure/entities/remote_asset.entity.dart';
 import 'package:immich_mobile/infrastructure/utils/drift_default.mixin.dart';
 
@@ -23,3 +24,9 @@ class AssetEditEntity extends Table with DriftDefaultsMixin {
 final JsonTypeConverter2<Map<String, Object?>, Uint8List, Object?> editParameterConverter = TypeConverter.jsonb(
   fromJson: (json) => json as Map<String, Object?>,
 );
+
+extension AssetEditEntityDataDomainEx on AssetEditEntityData {
+  AssetEdit toDto() {
+    return AssetEdit(action: action, parameters: parameters);
+  }
+}
