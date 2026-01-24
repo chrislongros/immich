@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
@@ -5,13 +6,11 @@ import 'package:collection/collection.dart';
 import 'package:crop_image/crop_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:immich_mobile/constants/enums.dart';
 import 'package:immich_mobile/domain/models/asset/base_asset.model.dart';
 import 'package:immich_mobile/domain/models/asset_edit.model.dart';
 import 'package:immich_mobile/domain/models/exif.model.dart';
-import 'package:immich_mobile/entities/asset.entity.dart';
 import 'package:immich_mobile/extensions/build_context_extensions.dart';
 import 'package:immich_mobile/providers/infrastructure/action.provider.dart';
 import 'package:immich_mobile/providers/theme.provider.dart';
@@ -20,15 +19,8 @@ import 'package:immich_mobile/theme/theme_data.dart';
 import 'package:immich_mobile/utils/editor.utils.dart';
 import 'package:immich_mobile/widgets/common/immich_toast.dart';
 import 'package:immich_ui/immich_ui.dart';
-import 'package:openapi/api.dart' show CropParameters, RotateParameters;
+import 'package:openapi/api.dart' show CropParameters, RotateParameters, MirrorParameters, MirrorAxis;
 
-/// A stateful widget that provides functionality for editing an image.
-///
-/// This widget allows users to edit an image provided either as an [Asset] or
-/// directly as an [Image]. It ensures that exactly one of these is provided.
-///
-/// It also includes a conversion method to convert an [Image] to a [Uint8List] to save the image on the user's phone
-/// They automatically navigate to the [HomePage] with the edited image saved and they eventually get backed up to the server.
 @RoutePage()
 class DriftEditImagePage extends ConsumerStatefulWidget {
   final Image image;
@@ -54,6 +46,9 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
   int _rotationAngle = 0;
   Duration _rotationAnimationDuration = const Duration(milliseconds: 250);
 
+  bool _flipHorizontal = false;
+  bool _flipVertical = false;
+
   double? aspectRatio;
 
   late final originalWidth = widget.exifInfo.isFlipped ? widget.exifInfo.height : widget.exifInfo.width;
@@ -78,6 +73,18 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
         )?.angle ??
         0;
 
+    // Load existing mirror settings
+    for (final edit in widget.edits.where((e) => e.action == AssetEditAction.mirror)) {
+      final mirrorParams = MirrorParameters.fromJson(edit.parameters);
+      if (mirrorParams != null) {
+        if (mirrorParams.axis == MirrorAxis.horizontal) {
+          _flipHorizontal = true;
+        } else if (mirrorParams.axis == MirrorAxis.vertical) {
+          _flipVertical = true;
+        }
+      }
+    }
+
     return (crop, rotationAngle.toDouble());
   }
 
@@ -88,11 +95,29 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
 
     final cropParameters = convertRectToCropParameters(cropController.crop, originalWidth ?? 0, originalHeight ?? 0);
     final normalizedRotation = (_rotationAngle % 360 + 360) % 360;
-
     final edits = <AssetEdit>[];
 
     if (cropParameters.width != originalWidth || cropParameters.height != originalHeight) {
       edits.add(AssetEdit(action: AssetEditAction.crop, parameters: cropParameters.toJson()));
+    }
+
+    // Mirror edits come before rotate in array so that the server applies rotate first, then mirror
+    if (_flipHorizontal) {
+      edits.add(
+        AssetEdit(
+          action: AssetEditAction.mirror,
+          parameters: MirrorParameters(axis: MirrorAxis.horizontal).toJson(),
+        ),
+      );
+    }
+
+    if (_flipVertical) {
+      edits.add(
+        AssetEdit(
+          action: AssetEditAction.mirror,
+          parameters: MirrorParameters(axis: MirrorAxis.vertical).toJson(),
+        ),
+      );
     }
 
     if (normalizedRotation != 0) {
@@ -167,6 +192,28 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
     });
   }
 
+  void _flipHorizontally() {
+    setState(() {
+      if (_rotationAngle % 180 != 0) {
+        // When rotated 90 or 270 degrees, flipping horizontally is equivalent to flipping vertically
+        _flipVertical = !_flipVertical;
+      } else {
+        _flipHorizontal = !_flipHorizontal;
+      }
+    });
+  }
+
+  void _flipVertically() {
+    setState(() {
+      if (_rotationAngle % 180 != 0) {
+        // When rotated 90 or 270 degrees, flipping vertically is equivalent to flipping horizontally
+        _flipHorizontal = !_flipHorizontal;
+      } else {
+        _flipVertical = !_flipVertical;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Theme(
@@ -206,11 +253,16 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
                         turns: _rotationAngle / 360,
                         duration: _rotationAnimationDuration,
                         curve: Curves.easeInOut,
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          width: (_rotationAngle % 180 == 0) ? baseWidth : baseHeight,
-                          height: (_rotationAngle % 180 == 0) ? baseHeight : baseWidth,
-                          child: CropImage(controller: cropController, image: widget.image, gridColor: Colors.white),
+                        child: Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..scaleByDouble(_flipHorizontal ? -1.0 : 1.0, _flipVertical ? -1.0 : 1.0, 1.0, 1.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            width: (_rotationAngle % 180 == 0) ? baseWidth : baseHeight,
+                            height: (_rotationAngle % 180 == 0) ? baseHeight : baseWidth,
+                            child: CropImage(controller: cropController, image: widget.image, gridColor: Colors.white),
+                          ),
                         ),
                       ),
                     ),
@@ -234,17 +286,42 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  ImmichIconButton(
-                                    icon: Icons.rotate_left,
-                                    variant: ImmichVariant.ghost,
-                                    color: ImmichColor.secondary,
-                                    onPressed: _rotateLeft,
+                                  Row(
+                                    children: [
+                                      ImmichIconButton(
+                                        icon: Icons.rotate_left,
+                                        variant: ImmichVariant.ghost,
+                                        color: ImmichColor.secondary,
+                                        onPressed: _rotateLeft,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      ImmichIconButton(
+                                        icon: Icons.rotate_right,
+                                        variant: ImmichVariant.ghost,
+                                        color: ImmichColor.secondary,
+                                        onPressed: _rotateRight,
+                                      ),
+                                    ],
                                   ),
-                                  ImmichIconButton(
-                                    icon: Icons.rotate_right,
-                                    variant: ImmichVariant.ghost,
-                                    color: ImmichColor.secondary,
-                                    onPressed: _rotateRight,
+                                  Row(
+                                    children: [
+                                      ImmichIconButton(
+                                        icon: Icons.flip,
+                                        variant: ImmichVariant.ghost,
+                                        color: _flipHorizontal ? ImmichColor.primary : ImmichColor.secondary,
+                                        onPressed: _flipHorizontally,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Transform.rotate(
+                                        angle: pi / 2,
+                                        child: ImmichIconButton(
+                                          icon: Icons.flip,
+                                          variant: ImmichVariant.ghost,
+                                          color: _flipVertical ? ImmichColor.primary : ImmichColor.secondary,
+                                          onPressed: _flipVertically,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
