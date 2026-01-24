@@ -56,7 +56,7 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
 
   bool isEditing = false;
 
-  (Rect, double) getInitialEditorState() {
+  void initEditor() {
     final existingCrop = widget.edits.firstWhereOrNull((edit) => edit.action == AssetEditAction.crop);
 
     Rect crop = existingCrop != null && originalWidth != null && originalHeight != null
@@ -67,25 +67,16 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
           )
         : const Rect.fromLTRB(0, 0, 1, 1);
 
-    final rotationAngle =
-        RotateParameters.fromJson(
-          widget.edits.firstWhereOrNull((edit) => edit.action == AssetEditAction.rotate)?.parameters,
-        )?.angle ??
-        0;
+    cropController = CropController(defaultCrop: crop);
 
-    // Load existing mirror settings
-    for (final edit in widget.edits.where((e) => e.action == AssetEditAction.mirror)) {
-      final mirrorParams = MirrorParameters.fromJson(edit.parameters);
-      if (mirrorParams != null) {
-        if (mirrorParams.axis == MirrorAxis.horizontal) {
-          _flipHorizontal = true;
-        } else if (mirrorParams.axis == MirrorAxis.vertical) {
-          _flipVertical = true;
-        }
-      }
-    }
+    final (rotationAngle, flipHorizontal, flipVertical) = normalizeTransformEdits(widget.edits);
 
-    return (crop, rotationAngle.toDouble());
+    // dont animate to initial rotation
+    _rotationAnimationDuration = const Duration(milliseconds: 0);
+    _rotationAngle = rotationAngle.toInt();
+
+    _flipHorizontal = flipHorizontal;
+    _flipVertical = flipVertical;
   }
 
   Future<void> _saveEditedImage() async {
@@ -157,12 +148,7 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
   @override
   void initState() {
     super.initState();
-
-    final (existingCrop, existingRotationAngle) = getInitialEditorState();
-    cropController = CropController(defaultCrop: existingCrop);
-
-    _rotationAnimationDuration = const Duration(milliseconds: 0);
-    _rotationAngle = existingRotationAngle.toInt();
+    initEditor();
   }
 
   @override
