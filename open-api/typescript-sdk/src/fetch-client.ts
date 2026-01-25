@@ -637,14 +637,44 @@ export type AssetEditActionMirror = {
     action: AssetEditAction;
     parameters: MirrorParameters;
 };
+export type FilterParameters = {
+    /** B Offset (-255 -> 255) */
+    bOffset: number;
+    /** BB Bias */
+    bbBias: number;
+    /** BG Bias */
+    bgBias: number;
+    /** BR Bias */
+    brBias: number;
+    /** G Offset (-255 -> 255) */
+    gOffset: number;
+    /** GB Bias */
+    gbBias: number;
+    /** GG Bias */
+    ggBias: number;
+    /** GR Bias */
+    grBias: number;
+    /** R Offset (-255 -> 255) */
+    rOffset: number;
+    /** RB Bias */
+    rbBias: number;
+    /** RG Bias */
+    rgBias: number;
+    /** RR Bias */
+    rrBias: number;
+};
+export type AssetEditActionFilter = {
+    action: AssetEditAction;
+    parameters: FilterParameters;
+};
 export type AssetEditsDto = {
     assetId: string;
     /** list of edits */
-    edits: (AssetEditActionCrop | AssetEditActionRotate | AssetEditActionMirror)[];
+    edits: (AssetEditActionCrop | AssetEditActionRotate | AssetEditActionMirror | AssetEditActionFilter)[];
 };
 export type AssetEditActionListDto = {
     /** list of edits */
-    edits: (AssetEditActionCrop | AssetEditActionRotate | AssetEditActionMirror)[];
+    edits: (AssetEditActionCrop | AssetEditActionRotate | AssetEditActionMirror | AssetEditActionFilter)[];
 };
 export type AssetMetadataResponseDto = {
     key: string;
@@ -5870,7 +5900,8 @@ export enum AssetJobName {
 export enum AssetEditAction {
     Crop = "crop",
     Rotate = "rotate",
-    Mirror = "mirror"
+    Mirror = "mirror",
+    Filter = "filter"
 }
 export enum MirrorAxis {
     Horizontal = "horizontal",
