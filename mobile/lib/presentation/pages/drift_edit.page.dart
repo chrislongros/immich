@@ -43,9 +43,9 @@ class DriftEditImagePage extends ConsumerStatefulWidget {
 class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with TickerProviderStateMixin {
   late final CropController cropController;
 
-  int _rotationAngle = 0;
   Duration _rotationAnimationDuration = const Duration(milliseconds: 250);
 
+  int _rotationAngle = 0;
   bool _flipHorizontal = false;
   bool _flipVertical = false;
 
@@ -92,7 +92,6 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
       edits.add(AssetEdit(action: AssetEditAction.crop, parameters: cropParameters.toJson()));
     }
 
-    // Mirror edits come before rotate in array so that the server applies rotate first, then mirror
     if (_flipHorizontal) {
       edits.add(
         AssetEdit(
@@ -133,7 +132,6 @@ class _DriftEditImagePageState extends ConsumerState<DriftEditImagePage> with Ti
 
       context.pop();
     } catch (e) {
-      // show error snackbar
       if (mounted) {
         ImmichToast.show(context: context, msg: 'asset_edit_failed'.tr(), toastType: ToastType.error);
       }
