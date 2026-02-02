@@ -129,11 +129,8 @@ class ApiService implements Authentication {
 
   Future<String> _getWellKnownEndpoint(String baseUrl) async {
     try {
-      var headers = {"Accept": "application/json"};
-      headers.addAll(getRequestHeaders());
-
       final res = await NetworkRepository.client
-          .get(Uri.parse("$baseUrl/.well-known/immich"), headers: headers)
+          .get(Uri.parse("$baseUrl/.well-known/immich"))
           .timeout(const Duration(seconds: 5));
 
       if (res.statusCode == 200) {
@@ -197,10 +194,7 @@ class ApiService implements Authentication {
 
   @override
   Future<void> applyToParams(List<QueryParam> queryParams, Map<String, String> headerParams) {
-    return Future<void>(() {
-      var headers = ApiService.getRequestHeaders();
-      headerParams.addAll(headers);
-    });
+    return Future.value();
   }
 
   ApiClient get apiClient => _apiClient;
